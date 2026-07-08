@@ -17,6 +17,12 @@ struct ContentView: View {
                 .tabItem {
                     Label("Продукты", systemImage: "basket")
                 }
+
+            RecipesView()
+                .tabItem {
+                    Label("Рецепты", systemImage: "fork.knife")
+                }
         }
+        .appDismissKeyboardOnTap()
     }
 }

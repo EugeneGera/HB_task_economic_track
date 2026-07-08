@@ -35,20 +35,7 @@ extension AppData {
             ],
             plannerItems: Self.defaultPlannerItems,
             groceryCategories: Self.defaultGroceryCategories,
-            recipes: [
-                Recipe(
-                    title: "Сырники",
-                    ingredients: "творог, яйца, мука, сгущенка",
-                    instructions: "Смешать ингредиенты, сформировать сырники и обжарить до румяной корочки.",
-                    nutrition: "КБЖУ можно заполнить позже"
-                ),
-                Recipe(
-                    title: "Салат с авокадо",
-                    ingredients: "руккола, помидоры, авокадо, моцарелла, семечки",
-                    instructions: "Нарезать овощи, добавить моцареллу и семечки, заправить по вкусу.",
-                    nutrition: "КБЖУ можно заполнить позже"
-                )
-            ]
+            recipes: []
         )
     }
 

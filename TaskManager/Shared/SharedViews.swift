@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if os(iOS)
+import UIKit
+#endif
+
 struct EmptyStateView: View {
     let title: String
     let subtitle: String
@@ -24,6 +28,37 @@ struct AppEditButton: View {
         #else
         EmptyView()
         #endif
+    }
+}
+
+struct AddTextItemView: View {
+    @Environment(\.dismiss) private var dismiss
+    let title: String
+    let placeholder: String
+    let onSave: (String) -> Void
+
+    @State private var value = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField(placeholder, text: $value)
+            }
+            .navigationTitle(title)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Отмена") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Готово") {
+                        onSave(value.trimmedOrFallback("Без названия"))
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -119,6 +154,15 @@ enum AppColor {
 
 extension View {
     @ViewBuilder
+    func appDismissKeyboardOnTap() -> some View {
+        #if os(iOS)
+        overlay(KeyboardDismissTapLayer().allowsHitTesting(false))
+        #else
+        self
+        #endif
+    }
+
+    @ViewBuilder
     func appDecimalKeyboard() -> some View {
         #if os(iOS)
         keyboardType(.decimalPad)
@@ -163,3 +207,84 @@ extension View {
         #endif
     }
 }
+
+#if os(iOS)
+private struct KeyboardDismissTapLayer: UIViewRepresentable {
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        DispatchQueue.main.async {
+            context.coordinator.installIfNeeded(from: view)
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        DispatchQueue.main.async {
+            context.coordinator.installIfNeeded(from: uiView)
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        private weak var window: UIWindow?
+        private weak var recognizer: UITapGestureRecognizer?
+
+        deinit {
+            if let recognizer {
+                window?.removeGestureRecognizer(recognizer)
+            }
+        }
+
+        func installIfNeeded(from view: UIView) {
+            guard let window = view.window, self.window !== window else {
+                return
+            }
+
+            if let recognizer {
+                self.window?.removeGestureRecognizer(recognizer)
+            }
+
+            let recognizer = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+            recognizer.cancelsTouchesInView = false
+            recognizer.delegate = self
+            window.addGestureRecognizer(recognizer)
+
+            self.window = window
+            self.recognizer = recognizer
+        }
+
+        @objc private func dismissKeyboard() {
+            window?.endEditing(true)
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            guard let view = touch.view else {
+                return true
+            }
+
+            return !view.hasKeyboardInputOrControlAncestor
+        }
+    }
+}
+
+private extension UIView {
+    var hasKeyboardInputOrControlAncestor: Bool {
+        var currentView: UIView? = self
+
+        while let view = currentView {
+            if view is UITextField || view is UITextView || view is UIControl {
+                return true
+            }
+
+            currentView = view.superview
+        }
+
+        return false
+    }
+}
+#endif
