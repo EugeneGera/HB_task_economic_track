@@ -8,7 +8,9 @@ final class AppStore: ObservableObject {
     }
 
     private let fileURL: URL
+    private let cloudBackupService = CloudBackupService()
     private var saveWorkItem: DispatchWorkItem?
+    private var lastLocalModifiedAt: Date
 
     init() {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -17,9 +19,13 @@ final class AppStore: ObservableObject {
         if let savedData = try? Data(contentsOf: fileURL),
            let decoded = try? JSONDecoder.appDecoder.decode(AppData.self, from: savedData) {
             data = decoded
+            lastLocalModifiedAt = fileURL.modificationDate ?? Date.distantPast
         } else {
             data = AppData.defaultData
+            lastLocalModifiedAt = Date.distantPast
         }
+
+        restoreFromCloudIfNeeded()
     }
 
     deinit {
@@ -51,7 +57,28 @@ final class AppStore: ObservableObject {
             return
         }
 
+        let modifiedAt = Date()
         try? encoded.write(to: fileURL, options: [.atomic])
+        lastLocalModifiedAt = modifiedAt
+        cloudBackupService.upload(data: data, modifiedAt: modifiedAt)
+    }
+
+    private func restoreFromCloudIfNeeded() {
+        cloudBackupService.fetchLatest { [weak self] snapshot in
+            DispatchQueue.main.async {
+                guard let self, let snapshot, snapshot.modifiedAt > self.lastLocalModifiedAt else {
+                    return
+                }
+
+                self.data = snapshot.data
+            }
+        }
+    }
+}
+
+private extension URL {
+    var modificationDate: Date? {
+        (try? resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
     }
 }
 
