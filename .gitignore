@@ -1,0 +1,27 @@
+.DS_Store
+
+# Xcode build output
+build/
+DerivedData/
+*.xcarchive
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# User-specific Xcode state
+*.xcuserstate
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Secrets and signing
+*.mobileprovision
+*.cer
+*.p12
+AuthKey_*.p8
